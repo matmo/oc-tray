@@ -35,7 +35,7 @@ class ownCloudTray(pyinotify.ProcessEvent):
         
         self.name = 'ownCloudTray'
         self.version = '0.2.0'
-        
+        self.keyring = 'login'
         # parse command line arguments
         self.optParser = OptionParser(usage = "usage: %prog [options] filename",
                                       version = "%prog v" + self.version)
@@ -309,86 +309,80 @@ class ownCloudTray(pyinotify.ProcessEvent):
         builder = Gtk.Builder()
         builder.add_from_file(self.uifile)
         window = builder.get_object ('dialogProperties')
-        
+
         buttonExe = builder.get_object('buttonExe')
-        buttonExe.set_filename(self.csyncExe)
+        buttonExe.set_filename(self.config['exe'])
         
         buttonLocalPath = builder.get_object('buttonLocalPath')
-        buttonLocalPath.set_filename(self.csyncLocalPath)
+        buttonLocalPath.set_filename(self.config['local_path'])
         
         buttonProtocol = builder.get_object('buttonProtocol')
         buttonProtocolModel = buttonProtocol.get_model()
         for item in buttonProtocolModel:
-            if item[0] == self.csyncProtocol:
+            if item[0] == self.config['protocol']:
                 buttonProtocol.set_active_iter(item.iter)
                 break
         
         entryUser = builder.get_object('entryUser')
-        entryUser.set_text(self.csyncUser)
+        entryUser.set_text(self.config['user'])
         
         entryPassword = builder.get_object('entryPassword')
-        entryPassword.set_text(self.csyncPassword)
+        entryPassword.set_text(self.config['password'])
         
         entryHost = builder.get_object('entryHost')
-        entryHost.set_text(self.csyncHost)
+        entryHost.set_text(self.config['host'])
         
         entryPort = builder.get_object('entryPort')
-        entryPort.set_text(str(self.csyncPort))
+        entryPort.set_text(str(self.config['port']))
         
         entryRemotePath = builder.get_object('entryRemotePath')
-        entryRemotePath.set_text(self.csyncRemotePath)
+        entryRemotePath.set_text(self.config['remote_path'])
         
         entrySubfolder = builder.get_object('entrySubfolder')
-        entrySubfolder.set_text(self.csyncSubfolder)
+        entrySubfolder.set_text(self.config['subfolder'])
         
         buttonTimeout = builder.get_object('buttonTimeout')
-        buttonTimeout.set_value(self.csyncTimeout)
+        buttonTimeout.set_value(self.config['timeout'])
         
         # save button pressed
         if window.run() == Gtk.ResponseType.OK:
             
-            self.csyncExe = buttonExe.get_filename()
-            self.csyncLocalPath = buttonLocalPath.get_filename()
+            self.config['exe'] = buttonExe.get_filename()
+            self.config['local_path'] = buttonLocalPath.get_filename()
             item = buttonProtocol.get_active()
-            self.csyncProtocol = buttonProtocolModel[item][0]
-            self.csyncUser = entryUser.get_text()
-            self.csyncPassword = entryPassword.get_text()
-            self.csyncHost = entryHost.get_text()
-            self.csyncPort = entryPort.get_text()
-            self.csyncRemotePath = entryRemotePath.get_text()
-            self.csyncSubfolder = entrySubfolder.get_text()
-            self.csyncTimeout = buttonTimeout.get_value_as_int()
+            self.config['protocol'] = buttonProtocolModel[item][0]
+            self.config['user'] = entryUser.get_text()
+            self.config['password'] = entryPassword.get_text()
+            self.config['host'] = entryHost.get_text()
+            self.config['port'] = entryPort.get_text()
+            self.config['remote_path'] = entryRemotePath.get_text()
+            self.config['subfolder'] = entrySubfolder.get_text()
+            self.config['timeout'] = buttonTimeout.get_value_as_int()
             
-            if not os.access(self.csyncExe, os.X_OK):
-                print '%s is not an executable' % self.csyncExe
+            if not os.access(self.config['exe'], os.X_OK):
+                print('%s is not an executable' % self.config['exe'])
             
             if not self.watchdesc == None:
                 self.unwatch()
             
-            if os.path.isdir(self.csyncLocalPath):
-                self.watch(self.csyncLocalPath)
+            if os.path.isdir(self.config['local_path']):
+                self.watch(self.config['local_path'])
             else:
-                print '%s is not a directory' % self.csyncLocalPath
+                print('%s is not a directory' % self.config['local_path'])
             
             if not self.csyncTimer == None:
                 self.csyncTimer.cancel()
-            
-            self.csyncTimer = threading.Timer(self.csyncTimeout, self.cbSync)
+            self.csyncTimer = threading.Timer(self.config['timeout'], self.cbSync)
             self.csyncTimer.start()
             
-            self.config.set('csync', 'exe',         self.csyncExe)
-            self.config.set('csync', 'local_path',  self.csyncLocalPath)
-            self.config.set('csync', 'protocol',    self.csyncProtocol)
-            self.config.set('csync', 'user',        self.csyncUser)
-            self.config.set('csync', 'password',    self.csyncPassword)
-            self.config.set('csync', 'host',        self.csyncHost)
-            self.config.set('csync', 'port',        self.csyncPort)
-            self.config.set('csync', 'remote_path', self.csyncRemotePath)
-            self.config.set('csync', 'subfolder',   self.csyncSubfolder)
-            self.config.set('csync', 'timeout',     self.csyncTimeout)
-            with open(self.configFile, 'wb') as configFile:
-                self.config.write(configFile)
-                
+            gk_attr_list = dict(self.config)
+            gk_password = gk_attr_list.pop('password')
+            if self.gk_item:
+                for key in self.gk_item:
+                    item_info = gk.item_delete_sync(self.keyring, key.item_id)
+            gk.item_create_sync(self.keyring, gk.ITEM_NETWORK_PASSWORD, self.name, gk_attr_list, gk_password, True)
+   
+
             self.cbSync()
         
         # cancel button pressed
