@@ -128,14 +128,14 @@ class ownCloudTray(pyinotify.ProcessEvent):
             self.cbProperties(None, None, None)
         
         # if directory exists
-        if os.path.isdir(self.csyncLocalPath):
+        if os.path.isdir(self.config['local_path']):
             
             # remove previously added directory from notifier
             if not self.watchdesc == None:
                 self.unwatch()
                 
             # add new directory to notifier
-            self.watch(self.csyncLocalPath)
+            self.watch(self.config['local_path'])
         
         # enable threading
         GLib.threads_init()
@@ -199,15 +199,15 @@ class ownCloudTray(pyinotify.ProcessEvent):
             self.statusIcon.set_from_pixbuf(self.statusIconError.get_pixbuf())
             self.statusIcon.set_tooltip_text(self.name + ': error in synchronization')
             
-        print 'End %s with returncode %s' % (self.csyncExe ,returncode)
+        print 'End %s with returncode %s' % (self.config['exe'] ,returncode)
         
         if not self.csyncForceStop == True:
             self.csyncInProgress = False
 
             if self.csyncSubmitAgain == True:
                 self.cbSync()
-            else
-                self.csyncTimer = threading.Timer(self.csyncTimeout, self.cbSync)
+            else:
+                self.csyncTimer = threading.Timer(self.config['timeout'], self.cbSync)
                 self.csyncTimer.start()
         else:
             self.csyncTimer.cancel()
@@ -226,18 +226,18 @@ class ownCloudTray(pyinotify.ProcessEvent):
             self.statusIcon.set_tooltip_text(self.name + ': synchronization in progress')
             
             # create the csync command
-            csyncArgs = [self.csyncExe, self.csyncLocalPath, self.csyncProtocol + '://' + self.csyncUser + ':' + self.csyncPassword + '@' + self.csyncHost + ':' + str(self.csyncPort) + self.csyncRemotePath + '/' + self.csyncSubfolder]
+            csyncArgs = [self.config['exe'], self.config['local_path'], self.config['protocol'] + '://' + self.config['user'] + ':' + self.config['password'] + '@' + self.config['host'] + ':' + str(self.config['port']) + '/' + self.config['remote_path'] + '/' + self.config['subfolder']]
             
             # start sub-thread
             self.csyncThread = threading.Thread(target=self.newThread, args=(self.cbThread, csyncArgs))
             self.csyncThread.start()
             
-            print 'Started %s' % self.csyncExe
+            print 'Started %s' % self.config['exe']
         
         else:
             self.csyncSubmitAgain = True
             
-            print 'Scheduled %s' % self.csyncExe
+            print 'Scheduled %s' % self.config['exe']
 
 
     # start synchronization immediately
@@ -247,7 +247,7 @@ class ownCloudTray(pyinotify.ProcessEvent):
             
         self.cbSync()
         
-        self.csyncTimer = threading.Timer(self.csyncTimeout, self.cbSync)
+        self.csyncTimer = threading.Timer(self.config['timeout'], self.cbSync)
         self.csyncTimer.start()
         
     
