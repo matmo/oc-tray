@@ -26,7 +26,6 @@ import sys
 import subprocess
 import threading
 from optparse import OptionParser
-import ConfigParser
 import gnomekeyring as gk
 
 class ownCloudTray(pyinotify.ProcessEvent):
@@ -79,30 +78,6 @@ class ownCloudTray(pyinotify.ProcessEvent):
             self.config = self.configDefault
             self.gk_item = []
             self.firstRun = True
-            configDir = os.path.dirname(self.configFile)
-            old_umask = os.umask(077)
-            if not os.path.exists(configDir):
-                os.makedirs(configDir)
-            with open(self.configFileExample, 'wb') as configFileExample:
-                self.configDefault.write(configFileExample)
-            with open(self.configFile, 'wb') as configFile:
-                self.configDefault.write(configFile)
-            os.umask(old_umask)
-            if self.config.read(self.configFile) == []:
-                print "configuration file %s is not accessible" % self.configFile
-                sys.exit(1)
-        
-        # persist configuration to parent object
-        self.csyncExe        = self.config.get('csync', 'exe')
-        self.csyncLocalPath  = self.config.get('csync', 'local_path')
-        self.csyncProtocol   = self.config.get('csync', 'protocol')
-        self.csyncUser       = self.config.get('csync', 'user')
-        self.csyncPassword   = self.config.get('csync', 'password')
-        self.csyncHost       = self.config.get('csync', 'host')
-        self.csyncPort       = self.config.getint('csync', 'port')
-        self.csyncRemotePath = self.config.get('csync', 'remote_path')
-        self.csyncSubfolder  = self.config.get('csync', 'subfolder')
-        self.csyncTimeout    = self.config.getint('csync', 'timeout')
         
         # load ui from glade file
         self.uifile = os.path.join(os.path.dirname(__file__), 'gui/ownCloudTray.glade')
