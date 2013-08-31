@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 #
 #   Copyright (c) 2012 by Michael Goehler <somebody.here@gmx.de>
 #
@@ -70,27 +70,14 @@ class ownCloudTray(pyinotify.ProcessEvent):
             'subfolder':'',
             'timeout':300,
         }
-        
-        self.config = self.configDefault
-        # create default configuration object
-        self.configDefault = ConfigParser.ConfigParser()
-        self.configDefault.add_section('csync')
-        self.configDefault.set('csync', 'exe',         '/usr/bin/csync')
-        self.configDefault.set('csync', 'local_path',  os.environ['HOME'] + '/ownCloud')
-        self.configDefault.set('csync', 'protocol',    'owncloud')
-        self.configDefault.set('csync', 'user',        '')
-        self.configDefault.set('csync', 'password',    '')
-        self.configDefault.set('csync', 'host',        'localhost')
-        self.configDefault.set('csync', 'port',        '80')
-        self.configDefault.set('csync', 'remote_path', '/files/webdav.php')
-        self.configDefault.set('csync', 'subfolder',   '')
-        self.configDefault.set('csync', 'timeout',     '300')
-        
-        # read configuration file if exists
-        self.configFile = os.path.expanduser('~/.config/' + self.name + '/' + self.name + '.conf')
-        self.configFileExample = os.path.expanduser('~/.config/' + self.name + '/' + self.name + '.conf.example')
-        self.config = ConfigParser.ConfigParser()
-        if self.config.read(self.configFile) == []:
+        gk_find_attr = {'owner':self.name}
+        try:
+            self.gk_item = gk.find_items_sync(gk.ITEM_NETWORK_PASSWORD, gk_find_attr)
+            self.config = self.gk_item[0].attributes
+            self.config['password'] = self.gk_item[0].secret
+        except gk.NoMatchError:
+            self.config = self.configDefault
+            self.gk_item = []
             self.firstRun = True
             configDir = os.path.dirname(self.configFile)
             old_umask = os.umask(077)
