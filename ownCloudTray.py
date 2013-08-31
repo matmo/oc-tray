@@ -27,7 +27,7 @@ import subprocess
 import threading
 from optparse import OptionParser
 import ConfigParser
-
+import gnomekeyring as gk
 
 class ownCloudTray(pyinotify.ProcessEvent):
 
@@ -58,6 +58,20 @@ class ownCloudTray(pyinotify.ProcessEvent):
         self.csyncThread = None
         self.csyncTimer = None
         
+        self.configDefault = {'owner':self.name,
+            'exe':'/usr/bin/csync',
+            'local_path':os.environ['HOME'] + '/ownCloud',
+            'protocol':'owncloud',
+            'user':'',
+            'password':'',
+            'host':'localhost',
+            'port':'80',
+            'remote_path':'files/webdav.php',
+            'subfolder':'',
+            'timeout':300,
+        }
+        
+        self.config = self.configDefault
         # create default configuration object
         self.configDefault = ConfigParser.ConfigParser()
         self.configDefault.add_section('csync')
