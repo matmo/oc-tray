@@ -343,7 +343,8 @@ class ownCloudTray(pyinotify.ProcessEvent):
                 for key in self.gk_item:
                     item_info = gk.item_delete_sync(self.keyring, key.item_id)
             gk.item_create_sync(self.keyring, gk.ITEM_NETWORK_PASSWORD, self.name, gk_attr_list, gk_password, True)
-   
+            gk_find_attr = {'owner':self.name}
+            self.gk_item = gk.find_items_sync(gk.ITEM_NETWORK_PASSWORD, gk_find_attr)
 
             self.cbSync()
         
